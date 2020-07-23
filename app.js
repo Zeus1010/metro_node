@@ -8,8 +8,10 @@ const session = require ('express-session')
 const bodyParser = require('body-parser')
 const comment = require('./models/commentSchema');
 const cors = require('cors');
-var name
-var email
+var https = require('https');
+var fs = require('fs');
+var name = ''
+var email = ''
 
 
 const TWO_HOURS = 1000*60*60*2
@@ -42,6 +44,7 @@ var app = express();
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
+app.set('secPort',PORT+443);
 app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
@@ -58,6 +61,25 @@ app.use(session({
     saveUninitialized: true,
     cookie: { secure: !true }
 }))
+
+var options = {
+  key: fs.readFileSync(__dirname+'/private.key'),
+  cert: fs.readFileSync(__dirname+'/certificate.pem')
+};
+var secureServer = https.createServer(options,app);
+
+secureServer.listen(app.get('secPort'), () => {
+  console.log('Server listening on port ',app.get('secPort'));
+});
+
+app.all('*', (req, res, next) => {
+  if (req.secure) {
+    return next();
+  }
+  else {
+    res.redirect(307, 'https://' + req.hostname + ':' + app.get('secPort') + req.url);
+  }
+});
 
 app.post('/login',(req,res)=>{
   const{email,name} = req.body
@@ -80,6 +102,7 @@ app.post('/comments',(req,res)=>{
     });
     data.save().then(result => {
       console.log(result);
+      console.log(data);
       res.status(201).json({
         message: "Done upload!",
         product_created: {
