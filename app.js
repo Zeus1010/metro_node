@@ -12,7 +12,7 @@ var https = require('https');
 var fs = require('fs');
 var name = ''
 var email = ''
-
+var temp = ""
 
 const TWO_HOURS = 1000*60*60*2
 const{
@@ -85,6 +85,7 @@ app.post('/login',(req,res)=>{
   const{email,name} = req.body
       this.name = name
       this.email = email
+      this.temp = email
       res.end('Done')
 })
 app.get('/login',(req,res)=>{
